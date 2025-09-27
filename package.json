@@ -1,0 +1,28 @@
+{
+  "name": "random-roulette",
+  "version": "1.0.0",
+  "description": "Веб-приложение для выбора случайного победителя с помощью рулетки",
+  "main": "roulette.html",
+  "scripts": {
+    "start": "python -m http.server 8000",
+    "build": "echo 'No build process needed for static files'",
+    "deploy": "echo 'Deploy to Netlify'"
+  },
+  "keywords": [
+    "roulette",
+    "random",
+    "winner",
+    "selection",
+    "russian"
+  ],
+  "author": "Tat",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/sytykhandrei1/random-roulette.git"
+  },
+  "bugs": {
+    "url": "https://github.com/sytykhandrei1/random-roulette/issues"
+  },
+  "homepage": "https://sytykhandrei1.github.io/random-roulette"
+}

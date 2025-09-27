@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Рандом Рулетка</title>
+    <link rel="stylesheet" href="roulette.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🎯 Рандом Рулетка</h1>
+        </header>
+
+        <main>
+            <!-- Поле для контекста -->
+            <div class="context-section">
+                <label for="context">Контекст задания:</label>
+                <input type="text" id="context" placeholder="Например: будет мыть посуду" maxlength="100">
+            </div>
+
+            <!-- Поля для участников -->
+            <div class="participants-section">
+                <label for="participant-input">Участники (максимум 30):</label>
+                <div class="input-container">
+                    <input type="text" id="participant-input" placeholder="Введите имя участника" maxlength="50">
+                    <button id="add-participant">Добавить</button>
+                </div>
+                <div id="suggestions" class="suggestions"></div>
+                <div id="participants-list" class="participants-list"></div>
+            </div>
+
+            <!-- Настройки анимации -->
+            <div class="settings-section">
+                <label for="spin-duration">Время прокрутки (секунды):</label>
+                <input type="number" id="spin-duration" min="1" max="10" value="3">
+            </div>
+
+            <!-- Кнопка запуска -->
+            <div class="spin-section">
+                <button id="spin-button" disabled>🎰 Запустить рулетку</button>
+            </div>
+
+            <!-- Результат -->
+            <div id="result-section" class="result-section hidden">
+                <div id="winner-display" class="winner-display"></div>
+                <div id="confetti-container"></div>
+            </div>
+
+            <!-- Статистика -->
+            <div class="stats-section">
+                <h3>📊 Статистика победителей</h3>
+                <div id="stats-content" class="stats-content">
+                    <p>Пока нет данных</p>
+                </div>
+                <button id="reset-stats" class="reset-button">Сбросить статистику</button>
+            </div>
+        </main>
+    </div>
+
+    <script src="roulette.js"></script>
+</body>
+</html>
