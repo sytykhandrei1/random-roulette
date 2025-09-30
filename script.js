@@ -1,10 +1,14 @@
 class RouletteApp {
     constructor() {
         this.participants = [];
-        this.winnerWeights = new Map(); // Веса участников для следующего розыгрыша
+        // nextSpinPenalty хранит штрафы (мультипликаторы вероятности) на СЛЕДУЮЩИЙ спин
+        // пример: { "Иван": 0.5 } — в следующем спине шанс в 2 раза меньше
+        this.nextSpinPenalty = new Map();
         this.stats = new Map(); // Статистика побед
         this.allTimeParticipants = new Set(); // Для саджестов
         this.maxParticipants = 30;
+        // Эмодзи-аватары участников
+        this.avatars = new Map();
         
         this.initializeElements();
         this.loadData();
@@ -63,6 +67,10 @@ class RouletteApp {
         }
         
         this.participants.push(name);
+        // Назначаем эмодзи-аватар при первом добавлении
+        if (!this.avatars.has(name)) {
+            this.avatars.set(name, this.generateRandomEmoji());
+        }
         this.allTimeParticipants.add(name);
         this.participantInput.value = '';
         this.hideSuggestions();
@@ -113,14 +121,27 @@ class RouletteApp {
     }
 
     updateUI() {
-        // Обновляем список участников
-        this.participantsList.innerHTML = this.participants
-            .map(name => `
-                <div class="participant-tag">
-                    ${name}
-                    <button class="remove" onclick="app.removeParticipant('${name}')">×</button>
+        // Обновляем список участников карточками
+        const totalWins = Array.from(this.stats.values()).reduce((sum, wins) => sum + wins, 0);
+        this.participantsList.innerHTML = this.participants.map(name => {
+            const wins = this.stats.get(name) || 0;
+            const percentage = totalWins > 0 ? ((wins / totalWins) * 100).toFixed(0) : 0;
+            const avatar = this.avatars.get(name) || '🙂';
+            const hasTotem = this.nextSpinPenalty.has(name) && (this.nextSpinPenalty.get(name) < 1);
+            return `
+                <div class="participant-card">
+                    <div class="participant-avatar" aria-hidden="true">${avatar}</div>
+                    <div class="participant-info">
+                        <div class="participant-name">${name}</div>
+                        <div class="participant-stats">${percentage}% побед</div>
+                    </div>
+                    <div class="participant-actions">
+                        <div class="totem ${hasTotem ? 'active' : ''}" title="Тотем: −50% шанса в следующий спин"></div>
+                        <button class="remove" onclick="app.removeParticipant('${name}')" aria-label="Удалить">×</button>
+                    </div>
                 </div>
-            `).join('');
+            `;
+        }).join('');
         
         // Обновляем кнопку запуска
         this.spinButton.disabled = this.participants.length < 2;
@@ -211,12 +232,14 @@ class RouletteApp {
     }
 
     selectWinner() {
-        // Выбираем победителя с учетом весов
+        // Выбираем победителя с учетом штрафов на текущий спин
         const weightedParticipants = [];
-        
         this.participants.forEach(name => {
-            const weight = this.winnerWeights.get(name) || 1;
-            for (let i = 0; i < weight; i++) {
+            const factor = this.nextSpinPenalty.get(name) || 1; // < 1 значит штраф
+            // Преобразуем коэффициент в целое количество "билетов"
+            // Минимум 1 билет для каждого
+            const tickets = Math.max(1, Math.round(10 * factor)); // 10 билетов по умолчанию, 5 если 0.5
+            for (let i = 0; i < tickets; i++) {
                 weightedParticipants.push(name);
             }
         });
@@ -227,16 +250,14 @@ class RouletteApp {
         // Обновляем статистику
         this.stats.set(winner, (this.stats.get(winner) || 0) + 1);
         
-        // Устанавливаем вес для следующего розыгрыша (уменьшаем вдвое)
-        this.winnerWeights.set(winner, 0.5);
+        // Назначаем победителю штраф на СЛЕДУЮЩИЙ спин: шанс ×0.5
+        this.nextSpinPenalty.set(winner, 0.5);
         
         // Показываем результат
         this.showResult(winner);
         
-        // Сбрасываем веса после розыгрыша
-        setTimeout(() => {
-            this.winnerWeights.clear();
-        }, 100);
+        // Обновляем UI, чтобы показать активный тотем у победителя
+        this.updateUI();
         
         this.spinButton.disabled = false;
         this.saveData();
@@ -294,7 +315,9 @@ class RouletteApp {
             participants: this.participants,
             allTimeParticipants: Array.from(this.allTimeParticipants),
             stats: Array.from(this.stats.entries()),
-            context: this.contextInput.value
+            context: this.contextInput.value,
+            avatars: Array.from(this.avatars.entries()),
+            penalties: Array.from(this.nextSpinPenalty.entries())
         };
         localStorage.setItem('rouletteData', JSON.stringify(data));
     }
@@ -308,10 +331,17 @@ class RouletteApp {
                 this.allTimeParticipants = new Set(parsed.allTimeParticipants || []);
                 this.stats = new Map(parsed.stats || []);
                 this.contextInput.value = parsed.context || '';
+                this.avatars = new Map(parsed.avatars || []);
+                this.nextSpinPenalty = new Map(parsed.penalties || []);
             } catch (e) {
                 console.error('Ошибка загрузки данных:', e);
             }
         }
+    }
+
+    generateRandomEmoji() {
+        const pool = ['🐶','🐱','🐭','🐹','🐰','🦊','🐻','🐼','🐨','🐯','🦁','🐷','🐸','🐵','🦄','🐔','🐧','🐦','🐤'];
+        return pool[Math.floor(Math.random() * pool.length)];
     }
 }
 
