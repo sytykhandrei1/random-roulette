@@ -29,6 +29,7 @@ class RouletteApp {
         this.confettiContainer = document.getElementById('confetti-container');
         this.statsContent = document.getElementById('stats-content');
         this.resetStatsButton = document.getElementById('reset-stats');
+        this.carouselTrack = document.getElementById('carousel-track');
     }
 
     setupEventListeners() {
@@ -142,6 +143,18 @@ class RouletteApp {
                 </div>
             `;
         }).join('');
+
+        // Обновляем карусель
+        if (this.carouselTrack) {
+            const items = this.participants.length ? this.participants : ['🐰','🦊','🐱','🐨','🐶','🐵'];
+            const row = [];
+            const avatars = items.map(n => (this.avatars.get(n) || n));
+            const sequence = [...avatars, 'CENTER', ...avatars];
+            this.carouselTrack.innerHTML = sequence.map(token => {
+                if (token === 'CENTER') return `<div class="carousel-item large">${avatars[0] || '🐰'}</div>`;
+                return `<div class="carousel-item">${token}</div>`;
+            }).join('');
+        }
         
         // Обновляем кнопку запуска
         this.spinButton.disabled = this.participants.length < 2;
@@ -193,57 +206,43 @@ class RouletteApp {
     }
 
     createRoulette() {
-        // Создаем визуальную рулетку
-        const rouletteContainer = document.createElement('div');
-        rouletteContainer.id = 'roulette-container';
-        rouletteContainer.style.cssText = `
-            position: fixed;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            width: 300px;
-            height: 300px;
-            border-radius: 50%;
-            background: conic-gradient(${this.participants.map((_, i) => 
-                `hsl(${i * 360 / this.participants.length}, 70%, 60%)`
-            ).join(', ')});
-            z-index: 1000;
-            animation: spin 3s linear infinite;
-            box-shadow: 0 0 20px rgba(0,0,0,0.3);
-        `;
-        
-        // Добавляем стили для анимации
-        const style = document.createElement('style');
-        style.textContent = `
-            @keyframes spin {
-                from { transform: translate(-50%, -50%) rotate(0deg); }
-                to { transform: translate(-50%, -50%) rotate(3600deg); }
-            }
-        `;
-        document.head.appendChild(style);
-        
-        document.body.appendChild(rouletteContainer);
-        
-        // Удаляем рулетку после анимации
-        setTimeout(() => {
-            document.body.removeChild(rouletteContainer);
-            document.head.removeChild(style);
-        }, parseInt(this.spinDurationInput.value) * 1000);
+        // Анимация карусели: смещаем трек влево на случайную дистанцию и easing
+        if (!this.carouselTrack || this.participants.length < 2) return;
+        const durationMs = parseInt(this.spinDurationInput.value) * 1000;
+        const itemWidth = 150 + 16; // 150px + gap
+        const bigWidth = 212 + 16;
+        const baseOffset = -(itemWidth * 3 + bigWidth / 2); // выравниваем так, чтобы крупный центр оказался под указателем
+
+        // Строим пул с учетом штрафов
+        const weighted = [];
+        this.participants.forEach(name => {
+            const factor = this.nextSpinPenalty.get(name) || 1;
+            const tickets = Math.max(1, Math.round(10 * factor));
+            for (let i = 0; i < tickets; i++) weighted.push(name);
+        });
+        const winner = weighted[Math.floor(Math.random() * weighted.length)];
+
+        // Найдем индекс победителя в текущем массиве участников
+        const index = Math.max(0, this.participants.indexOf(winner));
+        const targetShift = baseOffset - index * itemWidth;
+
+        this.carouselTrack.style.transition = 'none';
+        this.carouselTrack.style.transform = `translateY(-50%) translateX(0px)`;
+        // Запускаем на следующем тике
+        requestAnimationFrame(() => {
+            this.carouselTrack.style.transition = `transform ${durationMs}ms cubic-bezier(.12,.64,.16,1)`;
+            this.carouselTrack.style.transform = `translateY(-50%) translateX(${targetShift}px)`;
+        });
     }
 
     selectWinner() {
-        // Выбираем победителя с учетом штрафов на текущий спин
+        // Выбираем победителя с учетом штрафов (та же логика, что в createRoulette)
         const weightedParticipants = [];
         this.participants.forEach(name => {
-            const factor = this.nextSpinPenalty.get(name) || 1; // < 1 значит штраф
-            // Преобразуем коэффициент в целое количество "билетов"
-            // Минимум 1 билет для каждого
-            const tickets = Math.max(1, Math.round(10 * factor)); // 10 билетов по умолчанию, 5 если 0.5
-            for (let i = 0; i < tickets; i++) {
-                weightedParticipants.push(name);
-            }
+            const factor = this.nextSpinPenalty.get(name) || 1;
+            const tickets = Math.max(1, Math.round(10 * factor));
+            for (let i = 0; i < tickets; i++) weightedParticipants.push(name);
         });
-        
         const randomIndex = Math.floor(Math.random() * weightedParticipants.length);
         const winner = weightedParticipants[randomIndex];
         

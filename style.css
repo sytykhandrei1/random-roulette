@@ -33,6 +33,14 @@ main {
     gap: 25px;
 }
 
+/* Карусель */
+.carousel-section { display: grid; place-items: center; }
+.carousel-wrapper { position: relative; width: min(90vw, 832px); height: 212px; overflow: hidden; }
+.carousel-track { position: absolute; top: 50%; transform: translateY(-50%); display: flex; gap: 16px; left: 0; }
+.carousel-item { width: 150px; height: 150px; border-radius: 12px; display: grid; place-items: center; font-size: 100px; background: rgba(255,255,255,0.06); box-shadow: inset -7px -7px 14px rgba(0,0,0,0.25), inset 7px 7px 14px rgba(255,255,255,0.08); }
+.carousel-item.large { width: 212px; height: 212px; font-size: 141px; }
+.carousel-pointer { position: absolute; left: 50%; top: calc(100% + 10px); transform: translateX(-50%); width: 0; height: 0; border-left: 26px solid transparent; border-right: 26px solid transparent; border-top: 46px solid #7c13bc; filter: drop-shadow(0 6px 18px rgba(124,19,188,0.4)); }
+
 /* Секции */
 .context-section,
 .participants-section,
